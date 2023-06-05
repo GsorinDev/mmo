@@ -2,6 +2,21 @@ import * as THREE from 'three'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 
+/**
+ * Button
+ **/
+const shift = document.querySelector(".button-shift")
+const z = document.querySelector("#z")
+const q = document.querySelector("#q")
+const s = document.querySelector("#s")
+const d = document.querySelector("#d")
+
+shift.style.background = "rgba(134,133,133,0.5)"
+z.style.background = "rgba(134,133,133,0.5)"
+q.style.background = "rgba(134,133,133,0.5)"
+s.style.background = "rgba(134,133,133,0.5)"
+d.style.background = "rgba(134,133,133,0.5)"
+
 // Canvas
 const canvas = document.querySelector('.webgl')
 
@@ -30,22 +45,27 @@ const sizes = {
 }
 
 let mixer
+let mixers = [];
+let actions = [];
+let isAnimationPlaying = false;
+let isAttack = false;
 const clock = new THREE.Clock()
 const loader = new GLTFLoader()
-loader.loadAsync('assets/walking.glb')
+loader.loadAsync('assets/player.glb')
     .then(function (glb) {
         const root = glb.scene
         root.scale.set(2, 2, 2)
-        const animation = glb.animations[0]
 
-        // Create a mixer to play the animation
-        mixer = new THREE.AnimationMixer(root)
-
-        // Create an animation action from the animation data
-        const action = mixer.clipAction(animation)
+        glb.animations.splice(2).forEach((animation) => {
+            mixer = new THREE.AnimationMixer(root)
+            const action = mixer.clipAction(animation)
+            mixers.push(mixer)
+            actions.push(action)
+        });
+        console.log(actions)
 
         // Play the animation
-        action.play()
+        actions[4].play()
         scene.add(root)
     })
     .catch(function (error) {
@@ -91,7 +111,7 @@ const tick = () => {
     // Update animation
     if (mixer) {
         const delta = clock.getDelta()
-        mixer.update(delta)
+        mixers.forEach((mixer) => mixer.update(delta));
     }
 
     // Render scene
@@ -101,4 +121,79 @@ const tick = () => {
     window.requestAnimationFrame(tick)
 }
 
+
+
+document.addEventListener('keydown', function (event) {
+    if (!isAnimationPlaying && !isAttack) {
+        if (event.key === 'Shift') {
+            // Changer de la première à la deuxième animation
+            for (let i = 0; i < actions.length; i++) {
+                actions[i].stop();
+            }
+            shift.style.background = "rgba(134,133,133,0.8)"
+            actions[1].play();
+
+        } else if (event.key === 'z') {
+            z.style.background = "rgba(134,133,133,0.8)"
+        }  else if (event.key === 'q') {
+            q.style.background = "rgba(134,133,133,0.8)"
+        } else if (event.key === 's') {
+            s.style.background = "rgba(134,133,133,0.8)"
+        } else if (event.key === 'd') {
+            d.style.background = "rgba(134,133,133,0.8)"
+        }
+        isAnimationPlaying = true;
+    }
+});
+
+document.addEventListener('keyup', function (event) {
+    if (isAnimationPlaying && !isAttack) {
+        if (event.key === 'Shift') {
+            // Arrêter la deuxième animation et revenir à la première
+            for (let i = 0; i < actions.length; i++) {
+                actions[i].stop();
+            }
+            shift.style.background = "rgba(134, 133, 133, 0.5)"
+            actions[4].play();
+        } else if (event.key === 'z') {
+            z.style.background = "rgba(134,133,133,0.5)"
+        } else if (event.key === 'q') {
+            q.style.background = "rgba(134,133,133,0.5)"
+        } else if (event.key === 's') {
+            s.style.background = "rgba(134,133,133,0.5)"
+        } else if (event.key === 'd') {
+            d.style.background = "rgba(134,133,133,0.5)"
+        }
+        isAnimationPlaying = false;
+    }
+});
+
+document.addEventListener('mousedown', function(event) {
+    if (!isAnimationPlaying) {
+        if (event.button === 2) { // Vérifie si le bouton gauche de la souris est enfoncé (valeur 0)
+            // Changer de la première à la deuxième animation
+            for (let i = 0; i < actions.length; i++) {
+                actions[i].stop();
+            }
+
+            isAttack = true
+            isAnimationPlaying = true;
+            const clip = actions[2].getClip()
+            actions[2].play()
+
+            setTimeout(() => {
+                actions[2].stop()
+                actions[4].play()
+                isAttack = false
+                isAnimationPlaying = false
+            }, clip.duration * 1000)
+
+
+        }
+    }
+});
+
+
+
 tick()
+
